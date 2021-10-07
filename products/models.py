@@ -32,7 +32,7 @@ class Product(TimeStamp):
   sub_category  = models.ForeignKey(SubCategory, on_delete=models.CASCADE)
   colletion     = models.ForeignKey(Collection, on_delete=models.CASCADE)
   name          = models.CharField(max_length=45)
-  price         = models.DecimalField(max_digits=5)
+  price         = models.DecimalField(max_digits=10, decimal_places=5)
   color         = models.CharField(max_length=45)
   description   = models.CharField(max_length=1000)
   length        = models.CharField(max_length=45)

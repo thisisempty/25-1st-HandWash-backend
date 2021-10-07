@@ -17,7 +17,7 @@ class Order(TimeStamp):
   zip_code        = models.CharField(max_length=45)
   recipient       = models.CharField(max_length=45)
   recipient_phone = models.CharField(max_length=45)
-  total_price     = models.DecimalField(max_digits=5)
+  total_price     = models.DecimalField(max_digits=10, decimal_places=5)
 
   class Meta:
     db_table = 'orders'
