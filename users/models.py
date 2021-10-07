@@ -3,7 +3,6 @@ from django.db       import models
 from core.models     import TimeStamp
 from products.models import Product, Size
 
-
 class User(TimeStamp):
   name         = models.CharField(max_length=45)
   password     = models.CharField(max_length=200)
