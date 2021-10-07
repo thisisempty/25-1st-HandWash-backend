@@ -1,4 +1,5 @@
 from django.db   import models
+from django.db.models.deletion import CASCADE
 
 from core.models import TimeStamp
 
@@ -26,11 +27,11 @@ class Collection(models.Model):
   name = models.CharField(max_length=45)
 
   class Meta:
-    db_table = 'colletions'
+    db_table = 'collections'
 
 class Product(TimeStamp):
   sub_category  = models.ForeignKey(SubCategory, on_delete=models.CASCADE)
-  colletion     = models.ForeignKey(Collection, on_delete=models.CASCADE)
+  collection     = models.ForeignKey(Collection, on_delete=models.CASCADE, null=True)
   name          = models.CharField(max_length=45)
   price         = models.DecimalField(max_digits=10, decimal_places=5)
   color         = models.CharField(max_length=45)
@@ -52,8 +53,8 @@ class Size(models.Model):
     db_table = 'sizes'
 
 class ProductSize(models.Model):
-  product = models.ManyToManyField(Product)
-  size    = models.ManyToManyField(Size)
+  product = models.ForeignKey(Product, on_delete=CASCADE)
+  size    = models.ForeignKey(Size, on_delete=CASCADE)
 
   class Meta:
     db_table = 'products_sizes'
@@ -72,8 +73,8 @@ class Material(models.Model):
     db_table = 'materials'
 
 class ProductMaterial(models.Model):
-  product  = models.ManyToManyField(Product)
-  material = models.ManyToManyField(Material)
+  product  = models.ForeignKey(Product, on_delete=CASCADE)
+  material = models.ForeignKey(Material, on_delete=CASCADE)
 
   class Meta:
     db_table = 'products_materials'
