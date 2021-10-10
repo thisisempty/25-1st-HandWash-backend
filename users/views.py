@@ -1,14 +1,11 @@
 import json, re, bcrypt, jwt
-from json.decoder import JSONDecodeError
-from products.models import Product
-from handwash.utils import login_decorator
 
 from django.http            import JsonResponse
 from django.views           import View
 
-from users.models           import User, Like
+from users.models           import User
 from handwash.my_settings   import SECRET_KEY, ALGORITHM
-from handwash.utils            import login_decorator
+from handwash.utils         import login_decorator
 
 class SignUpView(View):
   def post(self, request):
