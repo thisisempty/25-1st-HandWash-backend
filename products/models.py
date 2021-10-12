@@ -1,4 +1,4 @@
-from django.db   import models
+from django.db                 import models
 from django.db.models.deletion import CASCADE
 
 from core.models import TimeStamp
@@ -31,13 +31,13 @@ class Collection(models.Model):
 
 class Product(TimeStamp):
   sub_category  = models.ForeignKey(SubCategory, on_delete=models.CASCADE)
-  collection     = models.ForeignKey(Collection, on_delete=models.CASCADE, null=True)
+  collection    = models.ForeignKey(Collection, on_delete=models.CASCADE, null=True)
   name          = models.CharField(max_length=45)
   price         = models.DecimalField(max_digits=10, decimal_places=5)
   color         = models.CharField(max_length=45)
   description   = models.CharField(max_length=1000)
-  length        = models.CharField(max_length=45)
-  fit           = models.CharField(max_length=45)
+  length        = models.CharField(max_length=45, null=True)
+  fit           = models.CharField(max_length=45, null=True)
   configuration = models.CharField(max_length=100)
   is_new        = models.BooleanField(default=1)
   is_conscious  = models.BooleanField(default=0)
@@ -59,12 +59,19 @@ class ProductSize(models.Model):
   class Meta:
     db_table = 'products_sizes'
 
-class Image(models.Model):
+class MainImage(models.Model):
   url     = models.CharField(max_length=500)
   product = models.ForeignKey(Product, on_delete=models.CASCADE)
 
   class Meta:
-    db_table = 'images'
+    db_table = 'main_images'
+
+class SubImage(models.Model) :
+  url     = models.CharField(max_length=500)
+  Product = models.ForeignKey(Product, on_delete=models.CASCADE)
+
+  class Meta:
+    db_table = 'sub_images'
 
 class Material(models.Model):
   name = models.CharField(max_length=45)

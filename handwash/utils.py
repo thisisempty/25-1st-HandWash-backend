@@ -1,9 +1,9 @@
-import json, jwt
+import jwt
 
 from django.http    import JsonResponse
 
-from handwash.my_settings    import SECRET_KEY
-from users.models     import User
+from my_settings    import SECRET_KEY
+from users.models   import User
 
 def login_decorator(func):
   def wrapper(self, request, *args, **kwargs):

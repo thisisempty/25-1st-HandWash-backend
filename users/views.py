@@ -4,7 +4,7 @@ from django.http            import JsonResponse
 from django.views           import View
 
 from users.models           import User
-from handwash.my_settings   import SECRET_KEY, ALGORITHM
+from my_settings            import SECRET_KEY, ALGORITHM
 from handwash.utils         import login_decorator
 
 class SignUpView(View):
