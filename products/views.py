@@ -85,7 +85,7 @@ class ProductDetailView(View) :
         'color'         : [{
           'id'          : color.id,
           'color'       : color.color,
-          'image'       : str([image.url for image in color.mainimage_set.all()][0])
+          'image'       : str(color.mainimage_set.first().url)
                           } for color in Product.objects.filter(name=product.name).all()],
         'size'          : [same_product.size.size for same_product in product.productsize_set.all()],
         'description'   : product.description,
