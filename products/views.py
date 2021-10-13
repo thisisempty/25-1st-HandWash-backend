@@ -1,12 +1,10 @@
 from django.http     import JsonResponse
-from django.http.response import Http404
 from django.views    import View
 
 from products.models import *
 
 class CategoryView(View) :
   def get(self, request) :
-
     category_list = [{
       'id'             : gender_category.id,
       'name'           : gender_category.name,
@@ -22,10 +20,11 @@ class CategoryView(View) :
 
     return JsonResponse({'category_list':category_list}, status=200)
 
-class ProductView(View) :
+class ProductListView(View) :
   def get(self, request) :
-
-    order_request = request.GET.get('sort')
+    limit         = int(request.GET.get('limit', 36))
+    offset        = int(request.GET.get('offset', 0))
+    order_request = request.GET.get('sort', 'recent')
     
     SORT_PREFIX = {
       'recent'    : '-created_at',
@@ -41,7 +40,8 @@ class ProductView(View) :
       'color'         : 'color__in',
       'size'          : 'productsize__size__in',
       'collection'    : 'collection__in',
-      'conscious'     : 'is_conscious__in'
+      'conscious'     : 'is_conscious__in',
+      'new'           : 'is_new__in'
     }
 
     filter_set = {
@@ -58,22 +58,18 @@ class ProductView(View) :
         'is_new'        : product.is_new,
         'is_conscious'  : product.is_conscious,
         'collection_id' : product.collection_id,
-        'color'         : [i.color for i in products.filter(name=product.name)],
-        'image'         : [i.url for i in product.image_set.all()][0:2]
-                      } for product in products]
+        'color'         : [same_product.color for same_product in products.filter(name=product.name, sub_category_id=product.sub_category_id).all()],
+        'image'         : [image.url for image in product.mainimage_set.all()]
+                      } for product in products[offset:offset+limit]]
     
       return JsonResponse({'products' : products_list}, status=200)
     
-    except :
-      raise Http404
+    except ValueError:
+      return JsonResponse({'message' : 'INVALID_VALUE'}, status=400)
 
 
 class ProductDetailView(View) :
   def get(self, request, product_id) :
-
-    if not Product.objects.filter(id=product_id).exists() :
-      return JsonResponse({'message' : 'DOES_NOT_EXISTS'}, status=404)
-
     if Product.objects.get(id=product_id).soft_deleted == 1 :
       return JsonResponse({'message' : 'DOES_NOT_EXISTS'}, status=404)
   
@@ -84,14 +80,14 @@ class ProductDetailView(View) :
         'id'            : product.id,
         'name'          : product.name,
         'price'         : format(int(product.price), ','),
-        'main_image'    : [i.url for i in product.image_set.all()][0:2],
-        'sub_image'     : [i.url for i in product.image_set.all()][2::],
+        'main_image'    : [image.url for image in product.mainimage_set.all()],
+        'sub_image'     : [image.url for image in product.subimage_set.all()],
         'color'         : [{
           'id'          : color.id,
           'color'       : color.color,
-          'image'       : str([i.url for i in color.image_set.all()][0])
+          'image'       : str([image.url for image in color.mainimage_set.all()][0])
                           } for color in Product.objects.filter(name=product.name).all()],
-        'size'          : [i.size.size for i in product.productsize_set.all()],
+        'size'          : [same_product.size.size for same_product in product.productsize_set.all()],
         'description'   : product.description,
         'length'        : product.length,
         'fit'           : product.fit,
@@ -104,5 +100,5 @@ class ProductDetailView(View) :
     except KeyError :
       return JsonResponse({'message' : 'KEY_ERROR'})
     
-    except :
-      raise Http404
+    except Product.DoesNotExist:
+      return JsonResponse({'message' : 'DOES_NOT_EXIST'}, status=404)

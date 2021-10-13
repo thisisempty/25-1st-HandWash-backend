@@ -20,5 +20,6 @@ from django.urls.conf import include
 urlpatterns = [
   path('users', include('users.urls')),
   path('likes', include('likes.urls')),
-  path('carts', include('carts.urls'))
+  path('carts', include('carts.urls')),
+  path('products', include('products.urls'))
 ]
