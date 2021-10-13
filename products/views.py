@@ -51,7 +51,7 @@ class ProductListView(View) :
 
     try :
       products = Product.objects.filter(
-        id__in = Product.objects.order_by('name').distinct('name'), **filter_set
+        id__in = Product.objects.order_by('name','sub_category_id').distinct('name','sub_category_id'), **filter_set
         ).order_by(SORT_PREFIX[order_request])
 
       products_list = [{
