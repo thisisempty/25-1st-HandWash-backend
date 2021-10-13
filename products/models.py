@@ -68,7 +68,7 @@ class MainImage(models.Model):
 
 class SubImage(models.Model) :
   url     = models.CharField(max_length=500)
-  Product = models.ForeignKey(Product, on_delete=models.CASCADE)
+  product = models.ForeignKey(Product, on_delete=models.CASCADE)
 
   class Meta:
     db_table = 'sub_images'
