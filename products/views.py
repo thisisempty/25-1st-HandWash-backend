@@ -35,8 +35,8 @@ class ProductListView(View) :
 
     FILTER_PREFIX = {
       'gender'        : 'sub_category__main_category__gender_category__in',
-      'main_category' : 'sub_category__main_category__in',
-      'sub_category'  : 'sub_category__in',
+      'main' : 'sub_category__main_category__in',
+      'sub'  : 'sub_category__in',
       'color'         : 'color__in',
       'size'          : 'productsize__size__in',
       'collection'    : 'collection__in',
