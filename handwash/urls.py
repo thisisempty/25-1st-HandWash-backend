@@ -19,5 +19,6 @@ from django.urls.conf import include
 
 urlpatterns = [
   path('users', include('users.urls')),
-  path('products', include('products.urls'))
+  path('likes', include('likes.urls')),
+  path('carts', include('carts.urls'))
 ]
