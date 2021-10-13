@@ -1,3 +1,4 @@
+from django.db.models import fields
 from django.http     import JsonResponse
 from django.views    import View
 
@@ -22,7 +23,7 @@ class CategoryView(View) :
 
 class ProductListView(View) :
   def get(self, request) :
-    limit         = int(request.GET.get('limit', 36))
+    limit         = int(request.GET.get('limit', 24))
     offset        = int(request.GET.get('offset', 0))
     order_request = request.GET.get('sort', 'recent')
     
@@ -35,8 +36,8 @@ class ProductListView(View) :
 
     FILTER_PREFIX = {
       'gender'        : 'sub_category__main_category__gender_category__in',
-      'main' : 'sub_category__main_category__in',
-      'sub'  : 'sub_category__in',
+      'main'          : 'sub_category__main_category__in',
+      'sub'           : 'sub_category__in',
       'color'         : 'color__in',
       'size'          : 'productsize__size__in',
       'collection'    : 'collection__in',
@@ -49,7 +50,9 @@ class ProductListView(View) :
     }
 
     try :
-      products = Product.objects.filter(**filter_set).order_by(SORT_PREFIX[order_request])
+      products = Product.objects.filter(
+        id__in = Product.objects.order_by('name').distinct('name'), **filter_set
+        ).order_by(SORT_PREFIX[order_request])
 
       products_list = [{
         'id'            : product.id,
@@ -58,11 +61,15 @@ class ProductListView(View) :
         'is_new'        : product.is_new,
         'is_conscious'  : product.is_conscious,
         'collection_id' : product.collection_id,
-        'color'         : [same_product.color for same_product in products.filter(name=product.name, sub_category_id=product.sub_category_id).all()],
+        'color'         : [{
+          'product_id' : same_product.id,
+          'color'      : same_product.color
+                          } for same_product in Product.objects.filter(name=product.name, sub_category_id=product.sub_category_id).all()],
         'image'         : [image.url for image in product.mainimage_set.all()]
                       } for product in products[offset:offset+limit]]
-    
-      return JsonResponse({'products' : products_list}, status=200)
+      
+      total_count = len(products_list)
+      return JsonResponse({'products' : products_list, 'total_count' : total_count}, status=200)
     
     except ValueError:
       return JsonResponse({'message' : 'INVALID_VALUE'}, status=400)
