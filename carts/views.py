@@ -7,7 +7,7 @@ from django.db.models import F, Sum
 from django.db        import transaction
 
 from carts.models    import Cart
-from products.models import Product, ProductSize, Size
+from products.models import Product, Size
 from handwash.utils  import login_decorator
 
 class CartView(View) :
@@ -15,54 +15,31 @@ class CartView(View) :
   def post(self, request) :
     data       = json.loads(request.body)
 
-    user       = request.user
-    product_id = data['product_id']
-
     try :
-      size       = Size.objects.get(size=data['size']).id
-      product    = Product.objects.get(id=product_id)
-      
-      if not ProductSize.objects.get(product_id=product_id, size_id=size) :
-        return JsonResponse({'message' : 'DOES_NOT_EXIST'}, status=404)
-      
-      if Cart.objects.filter(user_id=user.id, product_id=product.id, size_id=size).exists() :
-        cart = Cart.objects.get(product_id=product.id, size_id=size)
+      product_id = data['product_id']
+      size_id    = Size.objects.get(size=data['size']).id
 
+      cart, created = Cart.objects.get_or_create(product_id=product_id, size_id=size_id, user_id=request.user.id)
+
+      if not created :
         cart.count += 1
         cart.save()
-      
-      else :
-        Cart.objects.create(
-        user_id    = user.id,
-        product_id = product.id,
-        size_id    = size
-      )
 
       return JsonResponse({'message' : 'SUCCESS'}, status=201)
      
     except KeyError :
       return JsonResponse({'message' : 'KEY_ERROR'}, status=401)
     
-    except Product.DoesNotExist :
-      return JsonResponse({'message' : 'PRODUCT_DOES_NOT_EXIST'}, status=404)
-    
     except Cart.DoesNotExist :
       return JsonResponse({'message' : 'DOES_NOT_EXIST'}, status=404)
-
-    except ProductSize.DoesNotExist :
-      return JsonResponse({'message' : 'DOES_NOT_EXISTS'}, status=404)
-    
-    except Size.DoesNotExist :
-      return JsonResponse({'message' : "DOES_NOTE_EXIST"}, status=404)
-
+ 
     except JSONDecodeError :
       return JsonResponse({'message' : "JSON_DECODE_ERROR"}, status=400)
     
   @login_decorator
   def get(self, request) :
-    user         = request.user
-    user_cart    = Cart.objects.filter(user_id=user.id).all()
-    total_price  = user_cart.aggregate(total_price=Sum(F('count')*F('product__price')))['total_price']
+    cart    = Cart.objects.filter(user_id=request.user.id).order_by('created_at').all()
+    total_price  = cart.aggregate(total_price=Sum(F('count')*F('product__price')))['total_price']
 
     try :
       results = {
@@ -75,7 +52,7 @@ class CartView(View) :
           'products_price' : format(int(cart_product.product.price * cart_product.count), ","),
           'size'           : cart_product.size.size,
           'color'          : cart_product.product.color
-        }for cart_product in user_cart],
+        }for cart_product in cart],
         'total_price'  : format(int(total_price), ','),
         'delivery_fee' : '무료' if total_price >= 30000 or total_price == 0 else "2,500"
       }
@@ -85,7 +62,7 @@ class CartView(View) :
       return JsonResponse({'message' : 'KEY_ERROR'}, status=400)
     
     except Product.DoesNotExist :
-      return JsonResponse({'message' : 'PRODUCT_DOES_NOT_EXIST'}, status=404)
+      return JsonResponse({'message' : 'DOES_NOT_EXIST'}, status=404)
     
     except ValueError :
       return JsonResponse({'message' : 'INVALID_VALUE'}, status=400)
@@ -93,23 +70,14 @@ class CartView(View) :
   @login_decorator
   @transaction.atomic
   def patch(self, request) :
-    data = json.loads(request.body)
+    data       = json.loads(request.body)
+    cart_id    = request.GET.get('cart_id')
 
-    user       = request.user
-    cart_id    = data['cart_id']
-    product_id = data['product_id']
-
-    if not Cart.objects.filter(user_id=user.id, product_id=product_id).exists() :
+    if not Cart.objects.filter(user_id=request.user.id, id=cart_id).exists() :
       return JsonResponse({'message' : 'DOES_NOT_EXIST'}, status=404)
 
     try :
       cart = Cart.objects.get(id=cart_id)
-
-      if user.id != cart.user_id :
-        return JsonResponse({'message' : 'INVAILD_USER'}, status=400)
-
-      if not cart.product_id != product_id :
-        return JsonResponse({'message' : 'PRODUCT_DOES_NOT_EXIST'}, status=404)
 
       cart.count = data['count']
       cart.save()
@@ -124,19 +92,8 @@ class CartView(View) :
   
   @login_decorator
   def delete(self, request) :
-    data = json.loads(request.body)
-
-    user       = request.user
-    product_id = data['product_id']
-    size       = Size.objects.get(size=data['size']).id
-
-    if not Cart.objects.filter(user_id=user.id, product_id=product_id, size_id=size).exists() :
-      return JsonResponse({'message' : 'DOES_NOT_EXIST'}, status=404)
-
     try :
-      cart = Cart.objects.get(user_id=user.id, product_id=product_id, size_id=size)
-      
-      Cart.objects.filter(id=cart.id).delete()
+      Cart.objects.get(user_id=request.user.id, id=int(request.GET.get('cart_id'))).delete()
     
       return JsonResponse({'message' : 'SUCCESS'}, status=200)
     
@@ -145,16 +102,3 @@ class CartView(View) :
 
     except Cart.DoesNotExist :
       return JsonResponse({'message' : 'DOES_NOT_EXIST'}, status=404)
-
-
-
-
-
-
-
-
-    
-    
-
-    
-
