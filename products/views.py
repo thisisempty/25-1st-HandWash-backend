@@ -1,5 +1,6 @@
 from django.db.models import fields
 from django.http     import JsonResponse
+from django.http.response import Http404
 from django.views    import View
 
 from products.models import *
@@ -39,10 +40,10 @@ class ProductListView(View) :
       'main'          : 'sub_category__main_category__in',
       'sub'           : 'sub_category__in',
       'color'         : 'color__in',
-      'size'          : 'productsize__size__in',
+      'size'          : 'productsize__size__size__in',
       'collection'    : 'collection__in',
       'conscious'     : 'is_conscious__in',
-      'new'           : 'is_new__in'
+      'new'           : 'is_new__in',
     }
 
     filter_set = {
@@ -51,7 +52,7 @@ class ProductListView(View) :
 
     try :
       products = Product.objects.filter(
-        id__in = Product.objects.order_by('name','sub_category_id').distinct('name','sub_category_id'), **filter_set
+        id__in = Product.objects.select_related('productsize_size__name').order_by('name','sub_category_id').distinct('name','sub_category_id'), **filter_set
         ).order_by(SORT_PREFIX[order_request])
 
       products_list = [{
