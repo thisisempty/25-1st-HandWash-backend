@@ -68,14 +68,16 @@ class CartView(View) :
         'product_list' : [{
           'cart_id' : cart_product.id,
           'product_id'      : cart_product.product_id,
+          'image'   : cart_product.product.mainimage_set.first().url,
           'name'    : cart_product.product.name,
-          'price'   : format(int(cart_product.product.price * cart_product.count), ","),
+          'price'   : format(int(cart_product.product.price),','),
+          'products_price'   : format(int(cart_product.product.price * cart_product.count), ","),
           'size'    : cart_product.size.size,
           'color'   : cart_product.product.color
         }for cart_product in user_cart],
         'total_price' : format(int(total_price), ',')
       }
-      return JsonResponse({'result' : results}, status=200)
+      return JsonResponse(results, status=200)
 
     except KeyError :
       return JsonResponse({'message' : 'KEY_ERROR'}, status=400)
