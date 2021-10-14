@@ -15,24 +15,10 @@ class LikeView(View):
       data = json.loads(request.body)
       user = request.user
 
-      product_id = data['product_id']
-
-      if not product_id:
-        return JsonResponse({'MESSAGE' : 'KEY_ERROR'}, status = 400)
-
-      if not Product.objects.filter(id=product_id).exists():
-        return JsonResponse({'MESSAGE' : 'PRODUCT_DOES_NOT_EXIST'}, status = 404)
-
-      product = Product.objects.get(id=product_id)
-
-      if Like.objects.filter(user=user, product=product).exists():
-        Like.objects.filter(user=user, product=product).delete()
-        return JsonResponse({'MESSAGE' : 'SUCCESS'}, status = 200)
-
-      Like.objects.create(
-        user = user,
-        product = product
-      )
+      like, created = Like.objects.get_or_create(user = user, product_id = data['product_id'])
+      
+      if not created:
+          like.delete()
 
       return JsonResponse({'MESSAGE' : 'SUCCESS'}, status = 201)
 
@@ -42,19 +28,19 @@ class LikeView(View):
   @login_decorator
   def get(self, request):
       user = request.user
-      user_likes = Like.objects.filter(user_id=user.id).all()
+      products = Product.objects.filter(like__user_id = user.id)
 
       try:
         products_user_liked = [{
-          'product_id'   : product.product_id,
-          'image'        : product.product.mainimage_set.first().url,
-          'is_conscious' : product.product.is_conscious,
-          'name'         : product.product.name,
-          'price'        : format(int(product.product.price),','),
-          'is_new'       : product.product.is_new,
-          'color'        : product.product.color,
-          'sizes'        : [product.size.size for product in product.product.productsize_set.all()]
-        } for product in user_likes]
+          'product_id'   : product.id,
+          'image'        : product.mainimage_set.first().url,
+          'is_conscious' : product.is_conscious,
+          'name'         : product.name,
+          'price'        : format(int(product.price),','),
+          'is_new'       : product.is_new,
+          'color'        : product.color,
+          'sizes'        : [product.size.size for product in product.productsize_set.all()]
+        } for product in products]
 
         return JsonResponse({
           'MESSAGE' : 'SUCCESS',
