@@ -63,7 +63,6 @@ class CartView(View) :
     user_cart   = Cart.objects.filter(user_id=user.id).all()
     total_price = user_cart.aggregate(total_price=Sum(F('count')*F('product__price')))['total_price']
 
-
     try :
       results = {
         'product_list' : [{
@@ -87,7 +86,6 @@ class CartView(View) :
     except ValueError :
       return JsonResponse({'message' : 'INVALID_VALUE'}, status=400)
     
-
   @login_decorator
   def patch(self, request) :
     data = json.loads(request.body)
