@@ -1,13 +1,11 @@
 import json
-from django.core.checks import messages
-from django.db.models.aggregates import Count
+from json.decoder import JSONDecodeError
 
 from django.http import JsonResponse
 from django.views import View
 
 from carts.models import Cart
-from users.models import User
-from products.models import Product, ProductSize, Size
+from products.models import Product, ProductSize
 from handwash.utils import login_decorator
 
 class CartView(View) :
@@ -25,6 +23,7 @@ class CartView(View) :
       
       if Cart.objects.filter(user_id=user.id, product_id=product.id, size_id=size).exists() :
         cart = Cart.objects.get(product_id=product.id, size_id=size)
+
         cart.count += 1
         cart.save()
       
@@ -43,20 +42,30 @@ class CartView(View) :
     except Product.DoesNotExist :
       return JsonResponse({'message' : 'PRODUCT_DOES_NOT_EXIST'}, status=400)
     
+    except Cart.DoesNotExist :
+      return JsonResponse({'message' : 'DOES_NOT_EXIST'}, status=404)
+
+    except JSONDecodeError :
+      return JsonResponse({'message' : "JSON_DECODE_ERROR"}, status=400)
+    
   @login_decorator
   def get(self, request) :
-    user = request.user
+    user      = request.user
     user_cart = Cart.objects.filter(user_id=user.id).all()
-
+    '''
+    상품별 금액 합계, (완)
+    총 합계 (미완)
+    '''
     try :
       results = [{
-        'user_id' : user.id,
+        'user_id'      : user.id,
         'product_list' : [{
-          'id' : cart_product.product_id,
-          'name' : cart_product.product_set.name,
-          'price' : cart_product.product_set.price * cart_product.count,
-          'size' : cart_product.size_id,
-          'color' : cart_product.color
+          'cart_id' : cart_product.id,
+          'id'      : cart_product.product_id,
+          'name'    : cart_product.product.name,
+          'price'   : cart_product.product.price * cart_product.count,
+          'size'    : cart_product.productsize_set.size.size,
+          'color'   : cart_product.color
         }for cart_product in user_cart]
       }]
 
@@ -72,8 +81,8 @@ class CartView(View) :
   def patch(self, request) :
     data = json.loads(request.body)
 
-    user = request.user
-    cart_id = data['cart_id']
+    user       = request.user
+    cart_id    = data['cart_id']
     product_id = data['product_id']
 
     if not Cart.objects.filter(user_id=user.id, product_id=product_id).exists() :
@@ -103,22 +112,21 @@ class CartView(View) :
   def delete(self, request) :
     data = json.loads(request.body)
 
-    user = request.user
+    user       = request.user
     product_id = data['product_id']
 
     if not Cart.objects.filter(user_id=user.id, product_id=product_id).exists() :
       return JsonResponse({'message' : 'DOES_NOT_EXIST'}, status=404)
 
     try :
-      cart = Cart.objects.filter(user_id=user.id, product_id=product_id)
+      cart = Cart.objects.get(user_id=user.id, product_id=product_id)
 
       if user.id != cart.user_id :
         return JsonResponse({'message' : 'INVAILD_USER'}, status=400)
       
-      Cart.objects.filter(id=cart.id).delete()
+      Cart.objects.filter(id=cart.id).delete
 
       return JsonResponse({'message' : 'SUCCESS', 'total_price' : 30000}, status=200)
-
     
     except KeyError :
       return JsonResponse({'message' : 'KEY_ERROR'})
