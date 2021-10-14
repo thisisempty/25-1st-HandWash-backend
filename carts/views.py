@@ -1,13 +1,14 @@
 import json
 from json.decoder import JSONDecodeError
 
-from django.http import JsonResponse
-from django.views import View
+from django.http      import JsonResponse
+from django.views     import View
 from django.db.models import F, Sum
+from django.db        import transaction
 
-from carts.models import Cart
+from carts.models    import Cart
 from products.models import Product, ProductSize, Size
-from handwash.utils import login_decorator
+from handwash.utils  import login_decorator
 
 class CartView(View) :
   @login_decorator
@@ -23,7 +24,7 @@ class CartView(View) :
       
       if not ProductSize.objects.get(product_id=product_id, size_id=size) :
         return JsonResponse({'message' : 'DOES_NOT_EXIST'}, status=404)
-
+      
       if Cart.objects.filter(user_id=user.id, product_id=product.id, size_id=size).exists() :
         cart = Cart.objects.get(product_id=product.id, size_id=size)
 
@@ -59,23 +60,24 @@ class CartView(View) :
     
   @login_decorator
   def get(self, request) :
-    user        = request.user
-    user_cart   = Cart.objects.filter(user_id=user.id).all()
-    total_price = user_cart.aggregate(total_price=Sum(F('count')*F('product__price')))['total_price']
+    user         = request.user
+    user_cart    = Cart.objects.filter(user_id=user.id).all()
+    total_price  = user_cart.aggregate(total_price=Sum(F('count')*F('product__price')))['total_price']
 
     try :
       results = {
         'product_list' : [{
-          'cart_id' : cart_product.id,
-          'product_id'      : cart_product.product_id,
-          'image'   : cart_product.product.mainimage_set.first().url,
-          'name'    : cart_product.product.name,
-          'price'   : format(int(cart_product.product.price),','),
-          'products_price'   : format(int(cart_product.product.price * cart_product.count), ","),
-          'size'    : cart_product.size.size,
-          'color'   : cart_product.product.color
+          'cart_id'        : cart_product.id,
+          'product_id'     : cart_product.product_id,
+          'image'          : cart_product.product.mainimage_set.first().url,
+          'name'           : cart_product.product.name,
+          'price'          : format(int(cart_product.product.price),','),
+          'products_price' : format(int(cart_product.product.price * cart_product.count), ","),
+          'size'           : cart_product.size.size,
+          'color'          : cart_product.product.color
         }for cart_product in user_cart],
-        'total_price' : format(int(total_price), ',')
+        'total_price'  : format(int(total_price), ','),
+        'delivery_fee' : '무료' if total_price >= 30000 or total_price == 0 else "2,500"
       }
       return JsonResponse(results, status=200)
 
@@ -87,8 +89,9 @@ class CartView(View) :
     
     except ValueError :
       return JsonResponse({'message' : 'INVALID_VALUE'}, status=400)
-    
+  
   @login_decorator
+  @transaction.atomic
   def patch(self, request) :
     data = json.loads(request.body)
 
