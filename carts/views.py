@@ -3,9 +3,10 @@ from json.decoder import JSONDecodeError
 
 from django.http import JsonResponse
 from django.views import View
+from django.db.models import F, Sum
 
 from carts.models import Cart
-from products.models import Product, ProductSize
+from products.models import Product, ProductSize, Size
 from handwash.utils import login_decorator
 
 class CartView(View) :
@@ -15,12 +16,14 @@ class CartView(View) :
 
     user       = request.user
     product_id = data['product_id']
-    size       = ProductSize.objects.get(name=data['size'])
 
     try :
-
-      product = Product.objects.get(id=product_id)
+      size       = Size.objects.get(size=data['size']).id
+      product    = Product.objects.get(id=product_id)
       
+      if not ProductSize.objects.get(product_id=product_id, size_id=size) :
+        return JsonResponse({'message' : 'DOES_NOT_EXIST'}, status=404)
+
       if Cart.objects.filter(user_id=user.id, product_id=product.id, size_id=size).exists() :
         cart = Cart.objects.get(product_id=product.id, size_id=size)
 
@@ -37,45 +40,53 @@ class CartView(View) :
       return JsonResponse({'message' : 'SUCCESS'}, status=201)
      
     except KeyError :
-      return JsonResponse({'message' : 'KEY_ERROR'}, status=404)
+      return JsonResponse({'message' : 'KEY_ERROR'}, status=401)
     
     except Product.DoesNotExist :
-      return JsonResponse({'message' : 'PRODUCT_DOES_NOT_EXIST'}, status=400)
+      return JsonResponse({'message' : 'PRODUCT_DOES_NOT_EXIST'}, status=404)
     
     except Cart.DoesNotExist :
       return JsonResponse({'message' : 'DOES_NOT_EXIST'}, status=404)
+
+    except ProductSize.DoesNotExist :
+      return JsonResponse({'message' : 'DOES_NOT_EXISTS'}, status=404)
+    
+    except Size.DoesNotExist :
+      return JsonResponse({'message' : "DOES_NOTE_EXIST"}, status=404)
 
     except JSONDecodeError :
       return JsonResponse({'message' : "JSON_DECODE_ERROR"}, status=400)
     
   @login_decorator
   def get(self, request) :
-    user      = request.user
-    user_cart = Cart.objects.filter(user_id=user.id).all()
-    '''
-    상품별 금액 합계, (완)
-    총 합계 (미완)
-    '''
+    user        = request.user
+    user_cart   = Cart.objects.filter(user_id=user.id).all()
+    total_price = user_cart.aggregate(total_price=Sum(F('count')*F('product__price')))['total_price']
+
+
     try :
-      results = [{
-        'user_id'      : user.id,
+      results = {
         'product_list' : [{
           'cart_id' : cart_product.id,
-          'id'      : cart_product.product_id,
+          'product_id'      : cart_product.product_id,
           'name'    : cart_product.product.name,
-          'price'   : cart_product.product.price * cart_product.count,
-          'size'    : cart_product.productsize_set.size.size,
-          'color'   : cart_product.color
-        }for cart_product in user_cart]
-      }]
+          'price'   : format(int(cart_product.product.price * cart_product.count), ","),
+          'size'    : cart_product.size.size,
+          'color'   : cart_product.product.color
+        }for cart_product in user_cart],
+        'total_price' : format(int(total_price), ',')
+      }
+      return JsonResponse({'result' : results}, status=200)
 
     except KeyError :
-      return JsonResponse({'message' : 'KEY_ERROR'}, status=404)
+      return JsonResponse({'message' : 'KEY_ERROR'}, status=400)
     
     except Product.DoesNotExist :
-      return JsonResponse({'message' : 'PRODUCT_DOES_NOT_EXIST'}, status=400)
-
-    return JsonResponse({'result' : results}, status=200)
+      return JsonResponse({'message' : 'PRODUCT_DOES_NOT_EXIST'}, status=404)
+    
+    except ValueError :
+      return JsonResponse({'message' : 'INVALID_VALUE'}, status=400)
+    
 
   @login_decorator
   def patch(self, request) :
@@ -100,7 +111,7 @@ class CartView(View) :
       cart.count = data['count']
       cart.save()
       
-      return JsonResponse({'message' : 'SUCCESS', 'total_price' : 30000}, status=200)
+      return JsonResponse({'message' : 'SUCCESS'}, status=200)
 
     except KeyError :
       return JsonResponse({'message' : 'KEY_ERROR'}, status=400)
@@ -114,22 +125,20 @@ class CartView(View) :
 
     user       = request.user
     product_id = data['product_id']
+    size       = Size.objects.get(size=data['size']).id
 
-    if not Cart.objects.filter(user_id=user.id, product_id=product_id).exists() :
+    if not Cart.objects.filter(user_id=user.id, product_id=product_id, size_id=size).exists() :
       return JsonResponse({'message' : 'DOES_NOT_EXIST'}, status=404)
 
     try :
-      cart = Cart.objects.get(user_id=user.id, product_id=product_id)
-
-      if user.id != cart.user_id :
-        return JsonResponse({'message' : 'INVAILD_USER'}, status=400)
+      cart = Cart.objects.get(user_id=user.id, product_id=product_id, size_id=size)
       
-      Cart.objects.filter(id=cart.id).delete
-
-      return JsonResponse({'message' : 'SUCCESS', 'total_price' : 30000}, status=200)
+      Cart.objects.filter(id=cart.id).delete()
+    
+      return JsonResponse({'message' : 'SUCCESS'}, status=200)
     
     except KeyError :
-      return JsonResponse({'message' : 'KEY_ERROR'})
+      return JsonResponse({'message' : 'KEY_ERROR'}, status=400)
 
     except Cart.DoesNotExist :
       return JsonResponse({'message' : 'DOES_NOT_EXIST'}, status=404)
