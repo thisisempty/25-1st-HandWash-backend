@@ -32,7 +32,7 @@ class CartView(View) :
     
     except Cart.DoesNotExist :
       return JsonResponse({'message' : 'DOES_NOT_EXIST'}, status=404)
- 
+
     except JSONDecodeError :
       return JsonResponse({'message' : "JSON_DECODE_ERROR"}, status=400)
     
