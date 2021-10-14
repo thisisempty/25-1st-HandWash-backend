@@ -69,9 +69,8 @@ class CartView(View) :
   
   @login_decorator
   @transaction.atomic
-  def patch(self, request) :
+  def patch(self, request, cart_id) :
     data       = json.loads(request.body)
-    cart_id    = request.GET.get('cart_id')
 
     if not Cart.objects.filter(user_id=request.user.id, id=cart_id).exists() :
       return JsonResponse({'message' : 'DOES_NOT_EXIST'}, status=404)
@@ -91,9 +90,9 @@ class CartView(View) :
       return JsonResponse({'message' : 'DOES_NOT_EXIST'}, status=404)
   
   @login_decorator
-  def delete(self, request) :
+  def delete(self, request, cart_id) :
     try :
-      Cart.objects.get(user_id=request.user.id, id=int(request.GET.get('cart_id'))).delete()
+      Cart.objects.get(user_id=request.user.id, id=cart_id).delete()
     
       return JsonResponse({'message' : 'SUCCESS'}, status=200)
     
