@@ -39,6 +39,17 @@
 
 
 ## ⌨️ EndPoint
+- SignUpView : `POST` /users/signup
+- SignInView : `POST` /users/signin
+- CategoryView : `GET` /products/categories
+- ProductListView : `GET` /products/
+- ProductDetailView : `GET` /products/<int:product_id>
+- LikeView : `POST`, `GET` /likes/like
+- CartView : `POST`, `GET` /carts
+- CartView : `PATCH`, `DELETE` /carts?<int:cart_id>
+
+
+
 
 ## ❗️ Reference
 - 이 프로젝트는 [H&M](https://www2.hm.com/ko_kr/index.html) 사이트를 참조하여 학습목적으로 만들었습니다.
