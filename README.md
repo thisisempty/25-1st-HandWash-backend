@@ -16,7 +16,7 @@
 
 ## ⚙️ 적용기술
 - FrontEnd : React, Html5, Css3
-- BackEnd : Python, Django, MySQL, JWT, bcrypt, Postman(Insomnia)
+- BackEnd : Python@3.8.11, Django@3.2.8, PostgreSQL@14.0, JWT, bcrypt
 - Communication : Git, GitHub, Trello, Slack, Notion
 
 ## 💾 데이터베이스 
@@ -24,6 +24,8 @@
 
 
 ## 📒 구현기능
+
+### Front-end
 
 #### 전태양
 
@@ -33,7 +35,17 @@
 
 #### 조윤희
 
+### Back-end
+
+## 공통
+- modeling
+- CSV 파일 샘플 데이터 작성
+
 #### 이다빈
+- CSV데이터 백업용 db_uploader.py 작성
+- 카테고리별 상품 나열
+- Query String으로 들어온 상품 조건 별 필터링 & 정렬
+- 제품 상세 페이지
 
 #### 김민호
 
