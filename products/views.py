@@ -52,7 +52,7 @@ class ProductListView(View) :
 
     try :
       products = Product.objects.filter(
-        id__in = Product.objects.select_related('color__name').order_by('name','sub_category_id').distinct('name','sub_category_id'), **filter_set
+        id__in = Product.objects.prefetch_related('mainimage_set').order_by('name','sub_category_id').distinct('name','sub_category_id'), **filter_set
         ).order_by(SORT_PREFIX[order_request]).distinct()
 
       products_list = [{
