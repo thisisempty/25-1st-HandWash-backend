@@ -22,3 +22,9 @@ def login_decorator(func):
     return func(self, request, *args, **kwargs)
 
   return wrapper
+
+def formatting_price(price):
+    return format(int(price), ',')
+
+def calculate_delivery_fee(total_price):
+    return '무료' if total_price >= 30000 or total_price == 0 else '2,500'
